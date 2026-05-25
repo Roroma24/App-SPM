@@ -2,19 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/app_colors.dart';
-
 import '../home/home_screen.dart';
+import '../../services/api_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final correoController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  bool loading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
+
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
+
             child: Column(
               children: [
                 const SizedBox(height: 30),
@@ -24,9 +37,11 @@ class LoginScreen extends StatelessWidget {
                   width: 130,
                   height: 130,
                   padding: const EdgeInsets.all(18),
+
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
+
                     boxShadow: [
                       BoxShadow(
                         blurRadius: 20,
@@ -34,6 +49,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   child: Image.network(
                     'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Logo_UVM_Rojo.svg/1280px-Logo_UVM_Rojo.svg.png',
                   ),
@@ -65,9 +81,11 @@ class LoginScreen extends StatelessWidget {
                 /// CARD LOGIN
                 Container(
                   padding: const EdgeInsets.all(28),
+
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
+
                     boxShadow: [
                       BoxShadow(
                         blurRadius: 30,
@@ -78,10 +96,14 @@ class LoginScreen extends StatelessWidget {
 
                   child: Column(
                     children: [
+                      /// CORREO
                       TextField(
+                        controller: correoController,
+
                         decoration: InputDecoration(
                           labelText: 'Correo Institucional',
                           prefixIcon: const Icon(Icons.email_outlined),
+
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -90,11 +112,15 @@ class LoginScreen extends StatelessWidget {
 
                       const SizedBox(height: 24),
 
+                      /// PASSWORD
                       TextField(
+                        controller: passwordController,
                         obscureText: true,
+
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           prefixIcon: const Icon(Icons.lock_outline),
+
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -103,34 +129,61 @@ class LoginScreen extends StatelessWidget {
 
                       const SizedBox(height: 35),
 
+                      /// BOTON LOGIN
                       SizedBox(
                         width: double.infinity,
                         height: 58,
+
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
+
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
 
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const HomeScreen(),
-                              ),
+                          onPressed: () async {
+                            setState(() {
+                              loading = true;
+                            });
+
+                            final response = await ApiService.login(
+                              correoController.text,
+                              passwordController.text,
                             );
+
+                            setState(() {
+                              loading = false;
+                            });
+
+                            if (response["success"] == true ||
+                                response["success"].toString() == "true") {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HomeScreen(),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(response["message"])),
+                              );
+                            }
                           },
 
-                          child: Text(
-                            'Iniciar Sesión',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: loading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : Text(
+                                  'Iniciar Sesión',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

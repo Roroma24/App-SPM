@@ -82,10 +82,12 @@ def login():
     if user:
 
         return {
+            "success": True,
             "message": "Login correcto",
             "user": user
         }, 200
 
     return {
+        "success": False,
         "message": "Correo o contraseña incorrectos"
     }, 401
