@@ -1,12 +1,6 @@
-import mysql.connector
-
+from pymongo import MongoClient
 from config import Config
 
-db = mysql.connector.connect(
-    host=Config.DB_HOST,
-    user=Config.DB_USER,
-    password=Config.DB_PASSWORD,
-    database=Config.DB_NAME
-)
+client = MongoClient(Config.MONGO_URI)
 
-print("✅ MySQL conectado correctamente")
+db = client[Config.DB_NAME]

@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/api_service.dart';
 import '../../theme/app_colors.dart';
+import 'announcement_detail_screen.dart';
 
-class AnnouncementsScreen extends StatelessWidget {
+class AnnouncementsScreen extends StatefulWidget {
   const AnnouncementsScreen({super.key});
+
+  @override
+  State<AnnouncementsScreen> createState() => _AnnouncementsScreenState();
+}
+
+class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
+  late Future<List<dynamic>> announcementsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    announcementsFuture = ApiService.getAnnouncements();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,69 +42,108 @@ class AnnouncementsScreen extends StatelessWidget {
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
 
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+      body: FutureBuilder<List<dynamic>>(
+        future: announcementsFuture,
 
-        children: [
-          /// TITULO
-          Text(
-            "Comunicación Institucional",
-            style: GoogleFonts.inter(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-              fontSize: 12,
-            ),
-          ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          const SizedBox(height: 10),
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error al cargar anuncios",
+                style: GoogleFonts.inter(),
+              ),
+            );
+          }
 
-          Text(
-            "Anuncios.",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 42,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          final announcements = snapshot.data ?? [];
 
-          const SizedBox(height: 30),
+          return ListView(
+            padding: const EdgeInsets.all(24),
 
-          /// CARD 1
-          _announcementCard(
-            category: "Academia",
-            title: "Asegura tu futuro",
-            description:
-                "Paga tu RVOE para garantizar tu inscripción al siguiente semestre.",
-            color: AppColors.primary,
-          ),
+            children: [
+              /// TITULO
+              Text(
+                "Comunicación Institucional",
+                style: GoogleFonts.inter(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  fontSize: 12,
+                ),
+              ),
 
-          const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
-          /// CARD 2
-          _announcementCard(
-            category: "Eventos",
-            title: "Conferencia Magistral: IA en la Educación Superior",
-            description:
-                "Únete a la charla con expertos globales sobre modelos generativos.",
-            color: Colors.indigo,
-          ),
+              Text(
+                "Anuncios.",
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
 
-          const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
-          /// CARD 3
-          _announcementCard(
-            category: "Avisos",
-            title: "Mantenimiento de Blackboard",
-            description: "La plataforma no estará disponible temporalmente.",
-            color: Colors.orange,
-          ),
-        ],
+              ...announcements.map((announcement) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+
+                  child: _announcementCard(
+                    context: context,
+                    announcement: announcement,
+                    category: announcement["category"] ?? "",
+                    title: announcement["title"] ?? "",
+                    description: announcement["description"] ?? "",
+                    color: _getColor(announcement["category"] ?? ""),
+                  ),
+                );
+              }),
+            ],
+          );
+        },
       ),
     );
   }
 
+  Color _getColor(String category) {
+    switch (category.toLowerCase()) {
+      case "academia":
+        return AppColors.primary;
+
+      case "eventos":
+        return Colors.indigo;
+
+      case "avisos":
+        return Colors.orange;
+
+      case "becas":
+        return Colors.green;
+
+      case "deportes":
+        return Colors.red;
+
+      case "biblioteca":
+        return Colors.teal;
+
+      case "movilidad":
+        return Colors.purple;
+
+      case "empleo":
+        return Colors.blue;
+
+      default:
+        return AppColors.primary;
+    }
+  }
+
   Widget _announcementCard({
+    required BuildContext context,
+    required Map<String, dynamic> announcement,
     required String category,
     required String title,
     required String description,
@@ -161,22 +216,35 @@ class AnnouncementsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          /// BUTTON
-          Row(
-            children: [
-              Text(
-                "Leer más",
+          /// BOTON LEER MAS
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
 
-                style: GoogleFonts.inter(
-                  color: color,
-                  fontWeight: FontWeight.bold,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      AnnouncementDetailScreen(announcement: announcement),
                 ),
-              ),
+              );
+            },
 
-              const SizedBox(width: 8),
+            child: Row(
+              children: [
+                Text(
+                  "Leer más",
 
-              Icon(Icons.arrow_forward, color: color, size: 18),
-            ],
+                  style: GoogleFonts.inter(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                Icon(Icons.arrow_forward, color: color, size: 18),
+              ],
+            ),
           ),
         ],
       ),
