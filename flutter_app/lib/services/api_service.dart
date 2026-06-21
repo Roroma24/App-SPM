@@ -150,4 +150,60 @@ class ApiService {
 
     return jsonDecode(response.body);
   }
+
+  // ================= NOTIFICACIONES =================
+  static Future<Map<String, dynamic>> getNotifications(String userId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/notifications/$userId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> markNotificationAsRead(
+    String notificationId,
+  ) async {
+    final response = await http.patch(
+      Uri.parse("$baseUrl/notifications/$notificationId/read"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> markNotificationAsUnread(
+    String notificationId,
+  ) async {
+    final response = await http.patch(
+      Uri.parse("$baseUrl/notifications/$notificationId/unread"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> markAllNotificationsAsRead(
+    String userId,
+  ) async {
+    final response = await http.patch(
+      Uri.parse("$baseUrl/notifications/$userId/mark-all-read"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> toggleNotificationsPreference(
+    String userId,
+    bool enabled,
+  ) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/profile/$userId/notifications-toggle"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"notifications_enabled": enabled}),
+    );
+
+    return jsonDecode(response.body);
+  }
 }

@@ -5,6 +5,7 @@ from config import Config
 from routes.users import users
 from routes.announcements import announcement_bp
 from routes.publications import publications_bp
+from routes.notifications import notifications
 from database.db import db
 
 app = Flask(__name__)
@@ -13,6 +14,7 @@ CORS(app)
 app.register_blueprint(users)
 app.register_blueprint(announcement_bp)
 app.register_blueprint(publications_bp)
+app.register_blueprint(notifications, url_prefix='/notifications')
 
 @app.route("/")
 def home():

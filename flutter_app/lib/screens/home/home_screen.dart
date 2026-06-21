@@ -5,13 +5,43 @@ import 'package:provider/provider.dart';
 
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
+import '../../services/api_service.dart';
 
 import '../announcements/announcements_screen.dart';
 import '../wall/wall_screen.dart';
 import '../profile/profile_screen.dart';
+import '../notifications/notifications_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationsCount();
+  }
+
+  Future<void> _loadNotificationsCount() async {
+    final userProvider = context.read<UserProvider>();
+    final notificationsEnabled = userProvider.userSession['notifications_enabled'] ?? true;
+
+    if (notificationsEnabled) {
+      final userId = userProvider.userSession['_id'] ?? '';
+      try {
+        final response = await ApiService.getNotifications(userId);
+        if (response['success'] == true && mounted) {
+          userProvider.setUnreadNotificationsCount(response['unread_count'] ?? 0);
+        }
+      } catch (e) {
+        // Error silencioso
+      }
+    }
+  }
 
   // =========================
   // ABRIR REPOSITORIO
@@ -28,7 +58,10 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userSession = context.watch<UserProvider>().userSession;
+    final userProvider = context.watch<UserProvider>();
+    final userSession = userProvider.userSession;
+    final unreadCount = userProvider.unreadNotificationsCount;
+    final notificationsEnabled = userSession['notifications_enabled'] ?? true;
     
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -46,11 +79,53 @@ class HomeScreen extends StatelessWidget {
         ),
 
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_none),
-            color: AppColors.textPrimary,
-          ),
+          if (notificationsEnabled)
+            Stack(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    ).then((_) {
+                      _loadNotificationsCount();
+                    });
+                  },
+                  icon: Icon(
+                    unreadCount > 0 ? Icons.notifications : Icons.notifications_none,
+                    color: unreadCount > 0 ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            )
+          else
+            IconButton(
+              onPressed: null,
+              icon: Icon(Icons.notifications_none, color: AppColors.textSecondary.withOpacity(0.5)),
+              tooltip: 'Notificaciones desactivadas',
+            ),
         ],
       ),
 

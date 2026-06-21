@@ -46,7 +46,8 @@ def register():
         "campus": data.get("campus"),
         "edad": data.get("edad"),
         "fecha_nacimiento": data.get("fecha_nacimiento"),
-        "foto_perfil": data.get("foto_perfil", "")
+        "foto_perfil": data.get("foto_perfil", ""),
+        "notifications_enabled": True
     }
 
     result = users_collection.insert_one(user)
@@ -202,6 +203,40 @@ def update_profile(user_id):
         }, 200
     
     except Exception as e:
+        return {
+            "success": False,
+            "message": str(e)
+        }, 500
+
+
+@users.route("/profile/<user_id>/notifications-toggle", methods=["PUT"])
+def toggle_notifications(user_id):
+    """Toggle de notificaciones del usuario"""
+    try:
+        data = request.json
+        enabled = data.get("notifications_enabled", True)
+        
+        result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"notifications_enabled": enabled}}
+        )
+        
+        if result.modified_count == 0:
+            return {
+                "success": False,
+                "message": "Usuario no encontrado o sin cambios"
+            }, 400
+        
+        logger.info(f"Notificaciones toggled para usuario {user_id}: {enabled}")
+        
+        return {
+            "success": True,
+            "message": "Estado de notificaciones actualizado",
+            "notifications_enabled": enabled
+        }, 200
+    
+    except Exception as e:
+        logger.error(f"Error toggling notifications: {str(e)}")
         return {
             "success": False,
             "message": str(e)

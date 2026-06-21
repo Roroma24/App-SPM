@@ -276,6 +276,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
             _buildReadOnlyField('FECHA DE NACIMIENTO', userSession['fecha_nacimiento'] ?? '01/01/2004'),
             const SizedBox(height: 40),
+            Text(
+              'Preferencias',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildNotificationsToggle(userSession),
+            const SizedBox(height: 40),
             Row(
               children: [
                 Expanded(
@@ -389,6 +400,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Text(value, style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary)),
         ),
       ],
+    );
+  }
+
+  Widget _buildNotificationsToggle(Map<String, dynamic> userSession) {
+    bool notificationsEnabled = userSession['notifications_enabled'] ?? true;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F5FF),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary, width: 1.5),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Notificaciones',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                notificationsEnabled ? 'Activadas' : 'Desactivadas',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          Switch(
+            value: notificationsEnabled,
+            onChanged: (value) async {
+              try {
+                final userProvider = context.read<UserProvider>();
+                final response = await ApiService.toggleNotificationsPreference(
+                  userSession['_id'] ?? '',
+                  value,
+                );
+
+                if (response['success'] == true) {
+                  userProvider.updateUserField('notifications_enabled', value);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value ? 'Notificaciones activadas' : 'Notificaciones desactivadas',
+                        ),
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            activeColor: AppColors.primary,
+            inactiveThumbColor: Colors.grey,
+          ),
+        ],
+      ),
     );
   }
 }
