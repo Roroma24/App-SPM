@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../theme/app_colors.dart';
 import '../home/home_screen.dart';
 import '../../services/api_service.dart';
+import '../../providers/user_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -159,12 +161,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             if (response["success"] == true ||
                                 response["success"].toString() == "true") {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const HomeScreen(),
-                                ),
-                              );
+                              final userSession = response["user"] ?? {};
+                              
+                              if (mounted) {
+                                // Guardar sesión en Provider
+                                context.read<UserProvider>().setUserSession(userSession);
+                                
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const HomeScreen(),
+                                  ),
+                                );
+                              }
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(response["message"])),

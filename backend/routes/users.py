@@ -1,10 +1,15 @@
 from flask import Blueprint, request
 from database.db import db
 import bcrypt
+from bson.objectid import ObjectId
+import logging
+
+logger = logging.getLogger(__name__)
 
 users = Blueprint("users", __name__)
 
 users_collection = db["users"]
+publications_collection = db["publications"]
 
 
 @users.route("/register", methods=["POST"])
@@ -90,3 +95,114 @@ def login():
         "message": "Login correcto",
         "user": user
     }, 200
+
+
+@users.route("/logout", methods=["POST"])
+def logout():
+    """Endpoint para cerrar sesión (actualmente solo retorna confirmación)"""
+    return {
+        "success": True,
+        "message": "Sesión cerrada correctamente"
+    }, 200
+
+
+@users.route("/profile/<user_id>", methods=["GET"])
+def get_profile(user_id):
+    """Obtener perfil de usuario por ID"""
+    try:
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        
+        if not user:
+            return {
+                "success": False,
+                "message": "Usuario no encontrado"
+            }, 404
+        
+        user["_id"] = str(user["_id"])
+        user.pop("password", None)
+        
+        return {
+            "success": True,
+            "user": user
+        }, 200
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e)
+        }, 500
+
+
+@users.route("/profile/<user_id>", methods=["PUT"])
+def update_profile(user_id):
+    """Actualizar perfil de usuario"""
+    try:
+        data = request.json
+        
+        if not data:
+            return {
+                "success": False,
+                "message": "No se enviaron datos"
+            }, 400
+        
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        
+        if not user:
+            return {
+                "success": False,
+                "message": "Usuario no encontrado"
+            }, 404
+        
+        # Obtener el alias anterior para comparar
+        old_alias = user.get("alias")
+        new_alias = data.get("alias")
+        
+        # Actualizar solo los campos permitidos
+        allowed_fields = ["alias", "campus"]
+        update_data = {}
+        
+        for field in allowed_fields:
+            if field in data:
+                update_data[field] = data[field]
+        
+        if update_data:
+            result = users_collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": update_data}
+            )
+            
+            if result.modified_count == 0:
+                return {
+                    "success": False,
+                    "message": "No se realizaron cambios"
+                }, 400
+            
+            # Si el alias cambió, actualizar todas las publicaciones del usuario
+            if new_alias and new_alias != old_alias:
+                try:
+                    # Convertir user_id a ObjectId para buscar en publicaciones
+                    user_object_id = ObjectId(user_id)
+                    result = publications_collection.update_many(
+                        {"user_id": user_object_id},
+                        {"$set": {"user_alias": new_alias}}
+                    )
+                    logger.info(f"Publicaciones actualizadas: {result.modified_count} registros")
+                except Exception as e:
+                    logger.error(f"Error al actualizar publicaciones: {e}")
+        
+        # Obtener usuario actualizado
+        updated_user = users_collection.find_one({"_id": ObjectId(user_id)})
+        updated_user["_id"] = str(updated_user["_id"])
+        updated_user.pop("password", None)
+        
+        return {
+            "success": True,
+            "message": "Perfil actualizado correctamente",
+            "user": updated_user
+        }, 200
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e)
+        }, 500

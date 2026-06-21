@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
 import '../../theme/app_colors.dart';
+import '../../providers/user_provider.dart';
 
 import '../announcements/announcements_screen.dart';
 import '../wall/wall_screen.dart';
@@ -26,6 +28,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userSession = context.watch<UserProvider>().userSession;
+    
     return Scaffold(
       backgroundColor: AppColors.background,
 
@@ -58,7 +62,7 @@ class HomeScreen extends StatelessWidget {
 
           children: [
             Text(
-              'Hola, Estudiante',
+              'Hola, ${userSession['alias'] ?? 'Estudiante'}',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 34,
                 fontWeight: FontWeight.w800,
@@ -112,7 +116,9 @@ class HomeScreen extends StatelessWidget {
                       Navigator.push(
                         context,
 
-                        MaterialPageRoute(builder: (_) => const WallScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const WallScreen(),
+                        ),
                       );
                     },
                   ),
